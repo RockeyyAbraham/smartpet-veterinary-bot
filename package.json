@@ -1,0 +1,30 @@
+{
+  "name": "smartpet-veterinary-bot",
+  "version": "1.0.0",
+  "description": "A veterinary triage assistant developed as part of the SmartPet AI project.",
+  "main": "prompt.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RockeyyAbraham/smartpet-veterinary-bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RockeyyAbraham/smartpet-veterinary-bot/issues"
+  },
+  "homepage": "https://github.com/RockeyyAbraham/smartpet-veterinary-bot#readme",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.108.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "groq-sdk": "^1.2.1",
+    "ws": "^8.21.0"
+  }
+}
