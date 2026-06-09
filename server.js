@@ -39,6 +39,7 @@ async function handleChatRequest(req, res) {
   try {
     const message = req.body.message;
     const sessionId = req.body.sessionId;
+    const petId = req.body.petId;
 
     if (!message) {
       res.status(400).json({ error: 'Required field: "message" is missing.' });
@@ -56,17 +57,19 @@ async function handleChatRequest(req, res) {
     // 2. Retrieve pet context from Supabase
     const retrievedContext = await supabaseService.retrievePetContext(message);
 
-    // 3. Build prompt passing retrieved context and user message
-    const finalPrompt = buildPrompt(retrievedContext, message);
+    // 3. Build prompt passing retrieved context, user message, and history
+    const finalPrompt = buildPrompt(retrievedContext, message, history);
 
     // 4. Call Groq with built prompt
     const responseText = await llmService.generateResponse(finalPrompt);
 
-    // 5. Save user message and assistant response to memory
+    // 5. Save user message to memory
     memoryService.saveMessage(sessionId, 'user', message);
+
+    // 6. Save assistant response to memory
     memoryService.saveMessage(sessionId, 'assistant', responseText);
 
-    // 6. Return response
+    // 7. Return response
     res.json({ response: responseText });
 
   } catch (error) {

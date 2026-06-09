@@ -4,9 +4,20 @@
  *
  * @param {string} retrievedContext The vector search retrieved context from the database.
  * @param {string} userMessage The symptom or message sent by the user.
+ * @param {object[]} history The array of conversation history turns.
  * @returns {string} The complete system + context + message prompt string.
  */
-function buildPrompt(retrievedContext, userMessage) {
+function buildPrompt(retrievedContext, userMessage, history) {
+  let historyText = "";
+  if (history && history.length > 0) {
+    const historyLines = [];
+    for (let i = 0; i < history.length; i++) {
+      const turn = history[i];
+      historyLines.push(turn.role + ": " + turn.content);
+    }
+    historyText = "Conversation so far:\n" + historyLines.join("\n") + "\n\n";
+  }
+
   const instructions = 
     "You are SmartPet AI, a veterinary triage assistant.\n\n" +
     "IMPORTANT INSTRUCTIONS:\n" +
@@ -21,7 +32,8 @@ function buildPrompt(retrievedContext, userMessage) {
     "====================================\n" +
     retrievedContext + "\n" +
     "====================================\n\n" +
-    "USER MESSAGE:\n" +
+    historyText +
+    "Current user message:\n" +
     userMessage;
 
   return instructions;
