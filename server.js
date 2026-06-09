@@ -41,12 +41,9 @@ async function handleChatRequest(req, res) {
     const sessionId = req.body.sessionId;
     const petId = req.body.petId;
 
-    if (!message) {
-      res.status(400).json({ error: 'Required field: "message" is missing.' });
-      return;
-    }
-    if (!sessionId) {
-      res.status(400).json({ error: 'Required field: "sessionId" is missing.' });
+    // Validate at the very top that message, sessionId and petId are all present
+    if (!message || !sessionId || !petId) {
+      res.status(400).json({ error: 'message, sessionId and petId are required' });
       return;
     }
 
@@ -54,22 +51,28 @@ async function handleChatRequest(req, res) {
     const history = memoryService.getHistory(sessionId);
     console.log('Conversation history loaded for session ' + sessionId);
 
-    // 2. Retrieve pet context from Supabase
-    const retrievedContext = await supabaseService.retrievePetContext(message);
+    // 2. Retrieve pet context from Supabase using petId
+    const retrievedContext = await supabaseService.retrievePetContext(message, petId);
 
-    // 3. Build prompt passing retrieved context, user message, and history
+    // 3. If context is empty, return early with message
+    if (retrievedContext === '') {
+      res.json({ response: 'No pet profile found for the provided petId. Please check your pet ID.' });
+      return;
+    }
+
+    // 4. Build prompt passing retrieved context, user message, and history
     const finalPrompt = buildPrompt(retrievedContext, message, history);
 
-    // 4. Call Groq with built prompt
+    // 5. Call Groq with built prompt
     const responseText = await llmService.generateResponse(finalPrompt);
 
-    // 5. Save user message to memory
+    // 6. Save user message to memory
     memoryService.saveMessage(sessionId, 'user', message);
 
-    // 6. Save assistant response to memory
+    // 7. Save assistant response to memory
     memoryService.saveMessage(sessionId, 'assistant', responseText);
 
-    // 7. Return response
+    // 8. Return response
     res.json({ response: responseText });
 
   } catch (error) {

@@ -35,17 +35,19 @@ async function getEmbedding(text) {
 
 /**
  * Queries Supabase using match_pet_profiles RPC and returns a single concatenated context string.
- * Limits retrieval to the top 3 chunks.
+ * Filters results to only include rows where metadata.petId matches the provided petId.
  * 
  * @param {string} query The query string to retrieve context for.
- * @returns {Promise<string>} The concatenated context string.
+ * @param {string} petId The pet identifier to filter context by.
+ * @returns {Promise<string>} The concatenated context string, or an empty string if no matches.
  */
-async function retrievePetContext(query) {
+async function retrievePetContext(query, petId) {
   try {
     const embedding = await getEmbedding(query);
     
+    // We fetch up to 10 candidates to ensure we can find the matching chunks after filtering
     const rpcResponse = await supabase.rpc('match_pet_profiles', {
-      match_count: 3,
+      match_count: 10,
       query_embedding: embedding
     });
 
@@ -63,8 +65,10 @@ async function retrievePetContext(query) {
     if (data && data.length > 0) {
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
-        if (row && row.content) {
-          contextTexts.push(row.content);
+        if (row && row.metadata && String(row.metadata.petId) === String(petId)) {
+          if (row.content) {
+            contextTexts.push(row.content);
+          }
         }
       }
     }
@@ -73,7 +77,7 @@ async function retrievePetContext(query) {
       return contextTexts.join('\n---\n');
     }
 
-    return 'No relevant pet profile context found.';
+    return '';
   } catch (error) {
     console.error('Error in retrievePetContext:', error);
     throw error;
