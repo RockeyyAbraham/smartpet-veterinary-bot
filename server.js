@@ -69,11 +69,17 @@ async function queryVectorStore(embedding) {
     query_embedding: embedding
   });
 
-  if (rpcResponse.error) {
-    throw new Error('Supabase RPC Error: ' + rpcResponse.error.message);
+  const data = rpcResponse.data;
+  const error = rpcResponse.error;
+
+  console.log('Supabase response:', JSON.stringify(data));
+  console.log('Supabase error:', error);
+
+  if (error) {
+    throw new Error('Supabase RPC Error: ' + error.message);
   }
 
-  return rpcResponse.data;
+  return data;
 }
 
 /**
@@ -164,8 +170,14 @@ async function handleChatRequest(req, res) {
     // 2. Query Supabase vector store RPC function
     const chunks = await queryVectorStore(embedding);
 
-    // 3. Filter by petId and limit to top 3 chunks
-    const matchedChunks = filterAndLimitChunks(chunks, petId);
+    // 3. Filter by petId and limit to top 3 chunks (with fallback if filtering yields no matches)
+    let matchedChunks = filterAndLimitChunks(chunks, petId);
+    if (matchedChunks.length === 0 && chunks && chunks.length > 0) {
+      const fallbackLimit = chunks.length < 3 ? chunks.length : 3;
+      for (let i = 0; i < fallbackLimit; i++) {
+        matchedChunks.push(chunks[i]);
+      }
+    }
 
     // 4. Format the retrieved context
     const contextTexts = [];
