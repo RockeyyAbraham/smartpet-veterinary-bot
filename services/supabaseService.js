@@ -27,10 +27,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @returns {Promise<number[]>} The vector embedding array.
  */
 async function getEmbedding(text) {
-  const model = genAI.getGenerativeModel({ model: 'models/gemini-embedding-001' });
-  const result = await model.embedContent(text);
-  const embedding = result.embedding;
-  return embedding.values;
+  try {
+    const model = genAI.getGenerativeModel({ model: 'models/gemini-embedding-001' });
+    const result = await model.embedContent(text);
+    const embedding = result.embedding;
+    return embedding.values;
+  } catch (error) {
+    console.error('Embedding generation failed:', error);
+    throw new Error('Failed to generate embedding');
+  }
 }
 
 /**
@@ -43,13 +48,25 @@ async function getEmbedding(text) {
  */
 async function retrievePetContext(query, petId) {
   try {
-    const embedding = await getEmbedding(query);
+    let embedding;
+    try {
+      embedding = await getEmbedding(query);
+    } catch (embeddingError) {
+      console.error('Embedding step failed inside retrievePetContext:', embeddingError);
+      throw embeddingError;
+    }
     
-    // We fetch up to 10 candidates to ensure we can find the matching chunks after filtering
-    const rpcResponse = await supabase.rpc('match_pet_profiles', {
-      match_count: 10,
-      query_embedding: embedding
-    });
+    let rpcResponse;
+    try {
+      // We fetch up to 10 candidates to ensure we can find the matching chunks after filtering
+      rpcResponse = await supabase.rpc('match_pet_profiles', {
+        match_count: 10,
+        query_embedding: embedding
+      });
+    } catch (rpcCallError) {
+      console.error('Supabase RPC network call failed:', rpcCallError);
+      throw new Error('Failed to retrieve pet context');
+    }
 
     const data = rpcResponse.data;
     const error = rpcResponse.error;
@@ -58,7 +75,8 @@ async function retrievePetContext(query, petId) {
     console.log('Supabase RAG error:', error);
 
     if (error) {
-      throw new Error('Supabase RAG RPC Error: ' + error.message);
+      console.error('Supabase RPC returned database error:', error);
+      throw new Error('Failed to retrieve pet context');
     }
 
     const contextTexts = [];
@@ -79,7 +97,7 @@ async function retrievePetContext(query, petId) {
 
     return '';
   } catch (error) {
-    console.error('Error in retrievePetContext:', error);
+    console.error('retrievePetContext failed:', error);
     throw error;
   }
 }

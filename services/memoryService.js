@@ -9,14 +9,19 @@ const memoryStore = {};
  * @returns {object[]} The array of chat history messages.
  */
 function getHistory(sessionId) {
-  if (!sessionId) {
+  try {
+    if (!sessionId) {
+      return [];
+    }
+    const history = memoryStore[sessionId];
+    if (!history) {
+      return [];
+    }
+    return history;
+  } catch (error) {
+    console.error('Error in getHistory memory operation:', error);
     return [];
   }
-  const history = memoryStore[sessionId];
-  if (!history) {
-    return [];
-  }
-  return history;
 }
 
 /**
@@ -27,17 +32,21 @@ function getHistory(sessionId) {
  * @param {string} content The message text.
  */
 function saveMessage(sessionId, role, content) {
-  if (!sessionId) {
-    return;
+  try {
+    if (!sessionId) {
+      return;
+    }
+    if (!memoryStore[sessionId]) {
+      memoryStore[sessionId] = [];
+    }
+    const message = {
+      role: role,
+      content: content
+    };
+    memoryStore[sessionId].push(message);
+  } catch (error) {
+    console.error('Error in saveMessage memory operation:', error);
   }
-  if (!memoryStore[sessionId]) {
-    memoryStore[sessionId] = [];
-  }
-  const message = {
-    role: role,
-    content: content
-  };
-  memoryStore[sessionId].push(message);
 }
 
 /**
@@ -46,10 +55,14 @@ function saveMessage(sessionId, role, content) {
  * @param {string} sessionId The session identifier.
  */
 function clearHistory(sessionId) {
-  if (!sessionId) {
-    return;
+  try {
+    if (!sessionId) {
+      return;
+    }
+    memoryStore[sessionId] = [];
+  } catch (error) {
+    console.error('Error in clearHistory memory operation:', error);
   }
-  memoryStore[sessionId] = [];
 }
 
 module.exports = {

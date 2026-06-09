@@ -78,7 +78,7 @@ async function handleChatRequest(req, res) {
   } catch (error) {
     console.error('Error in /api/chat endpoint:', error);
     res.status(500).json({
-      error: error.message || 'Internal Server Error'
+      error: 'Internal server error'
     });
   }
 }
@@ -111,14 +111,27 @@ async function handleIngestRequest(req, res) {
   } catch (error) {
     console.error('Error in /api/ingest endpoint:', error);
     res.status(500).json({
-      error: error.message || 'Internal Server Error'
+      error: 'Internal server error'
     });
   }
+}
+
+/**
+ * Global Express error handling middleware.
+ */
+function globalErrorHandler(err, req, res, next) {
+  console.error('Unhandled global application error:', err);
+  res.status(500).json({
+    error: 'Internal server error'
+  });
 }
 
 // Define routes
 app.post('/api/chat', handleChatRequest);
 app.post('/api/ingest', handleIngestRequest);
+
+// Mount global error handler
+app.use(globalErrorHandler);
 
 // Start server
 app.listen(port, function() {

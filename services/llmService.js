@@ -32,8 +32,8 @@ async function generateResponse(promptText) {
 
     throw new Error('Empty response returned from Groq SDK.');
   } catch (error) {
-    console.error('Error in Groq generateResponse:', error);
-    throw error;
+    console.error('Groq generateResponse API call failed:', error);
+    throw new Error('Failed to generate LLM response');
   }
 }
 

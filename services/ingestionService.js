@@ -112,8 +112,8 @@ async function ingestPetProfile(petData) {
 
     return true;
   } catch (error) {
-    console.error('Error in ingestPetProfile service:', error);
-    throw error;
+    console.error('ingestPetProfile operation failed:', error);
+    throw new Error('Failed to ingest pet profile');
   }
 }
 
