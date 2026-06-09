@@ -17,139 +17,20 @@ for (let i = 0; i < requiredEnvVars.length; i++) {
 }
 
 const express = require('express');
-const supabaseJs = require('@supabase/supabase-js');
-const googleGenAi = require('@google/generative-ai');
-const Groq = require('groq-sdk');
-const ws = require('ws');
+const ws = require('ws'); // Keep WebSocket fix for compatibility
 const buildPrompt = require('./prompt');
 
-const createClient = supabaseJs.createClient;
-const GoogleGenerativeAI = googleGenAi.GoogleGenerativeAI;
+// Import services without destructuring
+const supabaseService = require('./services/supabaseService');
+const llmService = require('./services/llmService');
+const memoryService = require('./services/memoryService');
+const ingestionService = require('./services/ingestionService');
 
-// Initialize clients
+// Initialize server
 const app = express();
 app.use(express.json());
 
-const supabaseOptions = {
-  realtime: {
-    transport: ws
-  }
-};
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, supabaseOptions);
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 const port = process.env.PORT || 5000;
-
-/**
- * Generates vector embeddings for a given text query using Google Gemini models/gemini-embedding-001.
- * 
- * @param {string} text The text to embed.
- * @returns {Promise<number[]>} The vector embedding array.
- */
-async function getEmbedding(text) {
-  const model = genAI.getGenerativeModel({ model: 'models/gemini-embedding-001' });
-  const result = await model.embedContent(text);
-  const embedding = result.embedding;
-  return embedding.values;
-}
-
-/**
- * Queries the Supabase vector store function 'match_pet_profiles' with the query embedding.
- * Retrieves top matching rows.
- * 
- * @param {number[]} embedding The 3072-dimensional vector embedding.
- * @returns {Promise<object[]>} The array of matching database records.
- */
-async function queryVectorStore(embedding) {
-  // We fetch up to 10 candidates to ensure that after filtering by petId in JS,
-  // we still have a good chance of finding the top 3 matching chunks for that pet.
-  const rpcResponse = await supabase.rpc('match_pet_profiles', {
-    match_count: 10,
-    query_embedding: embedding
-  });
-
-  const data = rpcResponse.data;
-  const error = rpcResponse.error;
-
-  console.log('Supabase response:', JSON.stringify(data));
-  console.log('Supabase error:', error);
-
-  if (error) {
-    throw new Error('Supabase RPC Error: ' + error.message);
-  }
-
-  return data;
-}
-
-/**
- * Filters chunks to keep only those belonging to the given petId, and limits results to top 3.
- * 
- * @param {object[]} chunks The array of chunk records retrieved from the database.
- * @param {string} petId The pet identifier to filter by (optional).
- * @returns {object[]} The filtered and limited chunks.
- */
-function filterAndLimitChunks(chunks, petId) {
-  const filtered = [];
-  
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    
-    if (petId) {
-      const chunkId = String(chunk.id);
-      let metadataPetId = '';
-      
-      if (chunk.metadata && chunk.metadata.pet_id) {
-        metadataPetId = String(chunk.metadata.pet_id);
-      } else if (chunk.metadata && chunk.metadata.petId) {
-        metadataPetId = String(chunk.metadata.petId);
-      }
-      
-      // Keep chunk if it matches the petId by row id or metadata pet_id
-      if (chunkId === String(petId) || metadataPetId === String(petId)) {
-        filtered.push(chunk);
-      }
-    } else {
-      // If no petId filter is requested, include all chunks
-      filtered.push(chunk);
-    }
-    
-    if (filtered.length === 3) {
-      break;
-    }
-  }
-  
-  return filtered;
-}
-
-/**
- * Queries Groq using llama-3.3-70b-versatile with the compiled prompt.
- * 
- * @param {string} promptText The fully formatted prompt.
- * @returns {Promise<string>} The generated message response.
- */
-async function queryGroq(promptText) {
-  const chatCompletion = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    messages: [
-      {
-        role: 'user',
-        content: promptText
-      }
-    ]
-  });
-
-  const choices = chatCompletion.choices;
-  if (choices && choices.length > 0) {
-    const firstChoice = choices[0];
-    const choiceMessage = firstChoice.message;
-    if (choiceMessage && choiceMessage.content) {
-      return choiceMessage.content;
-    }
-  }
-
-  throw new Error('Empty response returned from Groq SDK.');
-}
 
 /**
  * POST /api/chat route handler.
@@ -157,48 +38,35 @@ async function queryGroq(promptText) {
 async function handleChatRequest(req, res) {
   try {
     const message = req.body.message;
-    const petId = req.body.petId;
+    const sessionId = req.body.sessionId;
 
     if (!message) {
       res.status(400).json({ error: 'Required field: "message" is missing.' });
       return;
     }
-
-    // 1. Generate text embedding
-    const embedding = await getEmbedding(message);
-
-    // 2. Query Supabase vector store RPC function
-    const chunks = await queryVectorStore(embedding);
-
-    // 3. Filter by petId and limit to top 3 chunks (with fallback if filtering yields no matches)
-    let matchedChunks = filterAndLimitChunks(chunks, petId);
-    if (matchedChunks.length === 0 && chunks && chunks.length > 0) {
-      const fallbackLimit = chunks.length < 3 ? chunks.length : 3;
-      for (let i = 0; i < fallbackLimit; i++) {
-        matchedChunks.push(chunks[i]);
-      }
+    if (!sessionId) {
+      res.status(400).json({ error: 'Required field: "sessionId" is missing.' });
+      return;
     }
 
-    // 4. Format the retrieved context
-    const contextTexts = [];
-    for (let i = 0; i < matchedChunks.length; i++) {
-      contextTexts.push(matchedChunks[i].content);
-    }
+    // 1. Load conversation history
+    const history = memoryService.getHistory(sessionId);
+    console.log('Conversation history loaded for session ' + sessionId);
 
-    let retrievedContext = '';
-    if (contextTexts.length > 0) {
-      retrievedContext = contextTexts.join('\n---\n');
-    } else {
-      retrievedContext = 'No relevant pet profile context found.';
-    }
+    // 2. Retrieve pet context from Supabase
+    const retrievedContext = await supabaseService.retrievePetContext(message);
 
-    // 5. Inject retrieved context and message into prompt template
+    // 3. Build prompt passing retrieved context and user message
     const finalPrompt = buildPrompt(retrievedContext, message);
 
-    // 6. Send compilation to Groq and retrieve answer
-    const responseText = await queryGroq(finalPrompt);
+    // 4. Call Groq with built prompt
+    const responseText = await llmService.generateResponse(finalPrompt);
 
-    // 7. Send back the response JSON
+    // 5. Save user message and assistant response to memory
+    memoryService.saveMessage(sessionId, 'user', message);
+    memoryService.saveMessage(sessionId, 'assistant', responseText);
+
+    // 6. Return response
     res.json({ response: responseText });
 
   } catch (error) {
@@ -209,8 +77,42 @@ async function handleChatRequest(req, res) {
   }
 }
 
+/**
+ * POST /api/ingest route handler.
+ */
+async function handleIngestRequest(req, res) {
+  try {
+    const petData = req.body;
+    
+    if (!petData) {
+      res.status(400).json({ error: 'Pet profile data is required in the request body.' });
+      return;
+    }
+    if (!petData.name) {
+      res.status(400).json({ error: 'Required field: "name" is missing.' });
+      return;
+    }
+    if (!petData.petId) {
+      res.status(400).json({ error: 'Required field: "petId" is missing.' });
+      return;
+    }
+
+    // Call ingestion service
+    await ingestionService.ingestPetProfile(petData);
+    
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error('Error in /api/ingest endpoint:', error);
+    res.status(500).json({
+      error: error.message || 'Internal Server Error'
+    });
+  }
+}
+
 // Define routes
 app.post('/api/chat', handleChatRequest);
+app.post('/api/ingest', handleIngestRequest);
 
 // Start server
 app.listen(port, function() {
