@@ -30,6 +30,19 @@ const ingestionService = require('./services/ingestionService');
 const app = express();
 app.use(express.json());
 
+/**
+ * Custom error handler to catch SyntaxError on invalid JSON payloads.
+ */
+function jsonErrorHandler(err, req, res, next) {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('SyntaxError: Invalid JSON payload received');
+    res.status(400).json({ error: 'Invalid JSON payload' });
+    return;
+  }
+  next(err);
+}
+app.use(jsonErrorHandler);
+
 const port = process.env.PORT || 5000;
 
 /**
@@ -41,9 +54,17 @@ async function handleChatRequest(req, res) {
     const sessionId = req.body.sessionId;
     const petId = req.body.petId;
 
-    // Validate at the very top that message, sessionId and petId are all present
-    if (!message || !sessionId || !petId) {
-      res.status(400).json({ error: 'message, sessionId and petId are required' });
+    // Validate individually that required fields are present
+    if (!message) {
+      res.status(400).json({ error: 'message is required' });
+      return;
+    }
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' });
+      return;
+    }
+    if (!petId) {
+      res.status(400).json({ error: 'petId is required' });
       return;
     }
 
@@ -78,7 +99,7 @@ async function handleChatRequest(req, res) {
   } catch (error) {
     console.error('Error in /api/chat endpoint:', error);
     res.status(500).json({
-      error: 'Internal server error'
+      error: 'Internal Server Error'
     });
   }
 }
@@ -111,7 +132,7 @@ async function handleIngestRequest(req, res) {
   } catch (error) {
     console.error('Error in /api/ingest endpoint:', error);
     res.status(500).json({
-      error: 'Internal server error'
+      error: 'Internal Server Error'
     });
   }
 }
@@ -122,7 +143,7 @@ async function handleIngestRequest(req, res) {
 function globalErrorHandler(err, req, res, next) {
   console.error('Unhandled global application error:', err);
   res.status(500).json({
-    error: 'Internal server error'
+    error: 'Internal Server Error'
   });
 }
 
