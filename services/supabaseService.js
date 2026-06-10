@@ -83,9 +83,32 @@ async function retrievePetContext(query, petId) {
     if (data && data.length > 0) {
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
-        if (row && row.metadata && String(row.metadata.petId) === String(petId)) {
-          if (row.content) {
-            contextTexts.push(row.content);
+        if (row) {
+          let isMatch = false;
+          const targetPetId = String(petId);
+          
+          if (row.metadata && row.metadata.petId) {
+            const rowPetId = String(row.metadata.petId);
+            if (rowPetId.toLowerCase() === targetPetId.toLowerCase()) {
+              isMatch = true;
+            }
+          }
+          
+          if (!isMatch) {
+            if (String(row.id) === targetPetId) {
+              isMatch = true;
+            } else {
+              const targetDigits = targetPetId.replace(/\D/g, '');
+              if (targetDigits && parseInt(targetDigits, 10) === row.id) {
+                isMatch = true;
+              }
+            }
+          }
+
+          if (isMatch) {
+            if (row.content) {
+              contextTexts.push(row.content);
+            }
           }
         }
       }
