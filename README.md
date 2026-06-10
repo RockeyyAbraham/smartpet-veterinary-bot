@@ -30,24 +30,32 @@ Responsibilities:
 
 ## Current Stack
 
-* n8n
-* Supabase Vector Store
-* Google Gemini Embeddings
-* Groq LLM
-* Node.js (planned implementation)
+* Node.js + Express
+* Supabase pgvector (vector database)
+* Google Gemini gemini-embedding-001 (embeddings)
+* Groq llama-3.3-70b-versatile (LLM)
+* n8n (used for prototyping, workflow exported as flow.json)
 
 ## Current Workflow
 
 ```text
-User Message
+POST /api/chat
       ↓
-AI Agent
+Input Validation
       ↓
-Supabase Vector Search
+Load Conversation History
       ↓
-Pet Profile Retrieval
+Gemini Embedding
       ↓
-LLM Response
+Supabase Vector Search (filtered by petId)
+      ↓
+Build Prompt
+      ↓
+Groq LLM
+      ↓
+Save to Memory
+      ↓
+Return Response
 ```
 
 The chatbot retrieves relevant pet profile information and uses it as context when responding to user-reported symptoms.
@@ -56,27 +64,27 @@ The chatbot retrieves relevant pet profile information and uses it as context wh
 
 ### Completed
 
-* Pet profile ingestion
+* Pet profile ingestion via POST /api/ingest
 * Vector embedding generation
-* Supabase vector storage
-* Retrieval pipeline
-* AI agent integration
-* Memory integration
-* End-to-end RAG workflow
+* Supabase vector storage with pgvector
+* Retrieval pipeline with petId filtering
+* Conversation memory (in-memory, per sessionId)
+* Input validation with 400 error responses
+* Full error handling with 500 responses
+* Service separation (supabaseService, llmService, memoryService, ingestionService)
+* Node.js Express implementation
 
 ### In Progress
 
-* Prompt refinement
-* Context handling improvements
-* Model evaluation
-* Node.js implementation
+* Testing
+* Integration with Richard's MongoDB backend
+* Prompt refinement based on real user testing
 
 ## Future Improvements
 
-* Improved symptom reasoning
-* Better context management
+* Persistent conversation history (Redis/MongoDB)
+* Auto-ingest from MongoDB on pet profile creation
 * Veterinary knowledge base integration
-* Express.js API implementation
 * Production deployment
 
 ## Notes
