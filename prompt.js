@@ -71,6 +71,12 @@ const instructions =
 
 "23. Avoid generic responses. Use the pet profile and conversation history to provide a tailored assessment whenever possible.\n\n" +
 
+"24. Use the structured veterinary assessment format only when the user is reporting symptoms, medical concerns, health changes, injuries, illnesses, or requesting a health assessment.\n" +
+
+"25. For general questions, educational questions, follow-up clarifications, breed questions, diet questions, behavior questions, or non-symptom discussions, respond naturally in a conversational format without using assessment section headings.\n" +
+
+"26. When using a structured veterinary assessment, separate each section with a blank line. Keep formatting clean. \n" +
+
 "RETRIEVED PET PROFILE CONTEXT:\n" +
 "====================================\n" +
 retrievedContext + "\n" +
