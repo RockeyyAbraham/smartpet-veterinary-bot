@@ -1,0 +1,44 @@
+[
+    {
+        "title": "Hip Dysplasia",
+        "species": "Dog",
+        "breed": [
+            "German Shepherd",
+            "Labrador Retriever"
+        ],
+        "condition_tags": [
+            "orthopedic",
+            "joint disease"
+        ],
+        "symptom_list": [
+            "limping",
+            "hip pain"
+        ],
+        "body_system": "Musculoskeletal",
+        "severity": "Moderate",
+        "concise_summary": "A developmental disorder affecting the hip joint.",
+        "full_text": "Hip dysplasia occurs when the hip joint develops abnormally...",
+        "source": "Merck Veterinary Manual",
+        "source_url": "https://www.merckvetmanual.com"
+    },
+    {
+        "title": "Conjunctivitis",
+        "species": "Dog",
+        "breed": [
+            "All Breeds"
+        ],
+        "condition_tags": [
+            "eye disease"
+        ],
+        "symptom_list": [
+            "red eye",
+            "eye discharge"
+        ],
+        "body_system": "Eyes",
+        "severity": "Mild",
+        "concise_summary": "Inflammation of the conjunctiva.",
+        "full_text": "Conjunctivitis may result from allergies, irritants, infections...",
+        "source": "Merck Veterinary Manual",
+        "source_url": "https://www.merckvetmanual.com"
+    }
+]
