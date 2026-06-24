@@ -1,44 +1,106 @@
 [
-    {
-        "title": "Hip Dysplasia",
-        "species": "Dog",
-        "breed": [
-            "German Shepherd",
-            "Labrador Retriever"
-        ],
-        "condition_tags": [
-            "orthopedic",
-            "joint disease"
-        ],
-        "symptom_list": [
-            "limping",
-            "hip pain"
-        ],
-        "body_system": "Musculoskeletal",
-        "severity": "Moderate",
-        "concise_summary": "A developmental disorder affecting the hip joint.",
-        "full_text": "Hip dysplasia occurs when the hip joint develops abnormally...",
-        "source": "Merck Veterinary Manual",
-        "source_url": "https://www.merckvetmanual.com"
-    },
-    {
-        "title": "Conjunctivitis",
-        "species": "Dog",
-        "breed": [
-            "All Breeds"
-        ],
-        "condition_tags": [
-            "eye disease"
-        ],
-        "symptom_list": [
-            "red eye",
-            "eye discharge"
-        ],
-        "body_system": "Eyes",
-        "severity": "Mild",
-        "concise_summary": "Inflammation of the conjunctiva.",
-        "full_text": "Conjunctivitis may result from allergies, irritants, infections...",
-        "source": "Merck Veterinary Manual",
-        "source_url": "https://www.merckvetmanual.com"
-    }
+  {
+    "title": "Osteoarthritis (Degenerative Joint Disease)",
+    "species": "Dog",
+    "breed": ["All Breeds"],
+    "condition_tags": ["orthopedic", "joint disease"],
+    "symptom_list": ["lameness", "stiffness", "joint swelling", "muscle wasting"],
+    "body_system": "Musculoskeletal",
+    "severity": "Moderate",
+    "concise_summary": "A chronic degenerative disease of the joints causing pain and mobility issues.",
+    "full_text": "Osteoarthritis is a degenerative joint disorder in which cartilage breaks down, leading to joint inflammation and pain. Affected dogs often show progressive lameness, stiffness (especially after rest), joint swelling, and muscle wasting around the affected joints. Management focuses on weight control, exercise modifications, and pain relief (e.g. NSAIDs) to improve mobility.",
+    "source": "Merck Veterinary Manual",
+    "source_url": "https://www.merckvetmanual.com"
+  },
+  {
+    "title": "Otitis Externa",
+    "species": "Dog",
+    "breed": ["All Breeds"],
+    "condition_tags": ["ear disease", "dermatology"],
+    "symptom_list": ["ear scratching", "head shaking", "ear redness", "ear discharge", "ear odor"],
+    "body_system": "Ears",
+    "severity": "Moderate",
+    "concise_summary": "Inflammation or infection of the external ear canal.",
+    "full_text": "Otitis externa is inflammation of the external ear canal and is very common in dogs and cats. Pets with otitis often shake their heads and scratch at their ears. The ear canal may become red, swollen, and produce discharge and a foul odor. Otitis can result from allergies, parasites (ear mites), foreign bodies, or infections. Treatment involves cleaning the ear and addressing underlying causes with topical antimicrobials and anti-inflammatories.",
+    "source": "Merck Veterinary Manual",
+    "source_url": "https://www.merckvetmanual.com"
+  },
+  {
+    "title": "Periodontal Disease",
+    "species": "Dog",
+    "breed": ["All Breeds"],
+    "condition_tags": ["dental"],
+    "symptom_list": ["bad breath (halitosis)", "tartar buildup", "inflamed gums", "bleeding gums", "loose teeth"],
+    "body_system": "Dental",
+    "severity": "Moderate",
+    "concise_summary": "Infection and inflammation of the tissues supporting the teeth.",
+    "full_text": "Periodontal disease is a chronic infection of the gums and supporting structures around the teeth. It causes halitosis (bad breath), dental plaque and tartar, and inflamed, bleeding gums. Over time, the gums recede and teeth may become loose or be lost. Diagnosis is by dental examination and X-rays. Treatment includes professional cleaning and, if needed, root planing to remove the infectious debris.",
+    "source": "Merck Veterinary Manual",
+    "source_url": "https://www.merckvetmanual.com"
+  },
+  {
+    "title": "Diabetes Mellitus",
+    "species": "Dog",
+    "breed": ["All Breeds"],
+    "condition_tags": ["endocrine", "metabolic"],
+    "symptom_list": ["increased thirst (polydipsia)", "increased urination (polyuria)", "weight loss", "increased appetite", "weakness"],
+    "body_system": "Endocrine",
+    "severity": "Moderate",
+    "concise_summary": "A metabolic disorder characterized by insulin deficiency or resistance, leading to elevated blood sugar.",
+    "full_text": "Diabetes mellitus is a chronic disorder of carbohydrate metabolism due to insufficient insulin production or action. It commonly affects middle-aged and older dogs (and cats). Typical signs include excessive thirst and urination (polydipsia/polyuria), weight loss despite increased appetite, and muscle weakness. Early diagnosis and management with insulin therapy and dietary changes are important for long-term control.",
+    "source": "Merck Veterinary Manual",
+    "source_url": "https://www.merckvetmanual.com"
+  },
+  {
+    "title": "Chronic Kidney Disease",
+    "species": "Cat",
+    "breed": ["All Breeds"],
+    "condition_tags": ["renal", "urinary"],
+    "symptom_list": ["increased thirst (polydipsia)", "frequent urination (polyuria)", "weight loss", "poor appetite", "lethargy"],
+    "body_system": "Renal",
+    "severity": "Moderate",
+    "concise_summary": "Gradual loss of kidney function over time, common in older pets.",
+    "full_text": "Chronic kidney disease (CKD) is a progressive loss of renal function over time, often seen in older cats (and dogs). Early signs include increased thirst and urination as the kidneys lose their concentrating ability. Affected pets often lose weight and become lethargic. Other signs in advanced CKD can include poor appetite and vomiting. CKD is irreversible; management focuses on special diets (lower protein and phosphorus), fluid therapy, and controlling secondary issues like hypertension.",
+    "source": "Merck Veterinary Manual",
+    "source_url": "https://www.merckvetmanual.com"
+  },
+  {
+    "title": "Atopic Dermatitis (Allergic Skin Disease)",
+    "species": "Dog",
+    "breed": ["All Breeds"],
+    "condition_tags": ["dermatologic", "allergy"],
+    "symptom_list": ["intense itchiness (pruritus)", "red, inflamed skin", "hair loss from scratching", "chronic ear infections"],
+    "body_system": "Skin",
+    "severity": "Moderate",
+    "concise_summary": "A common allergic skin disease causing intense itching and inflammation.",
+    "full_text": "Atopic dermatitis is a chronic allergic skin disease in dogs characterized by intense itchiness (pruritus). Affected dogs scratch, lick, and chew their skin excessively. Common areas include the feet, face, ears, and belly, which become red, inflamed, and often develop secondary infections. Chronic ear infections are also frequently seen. Treatment involves allergen avoidance, antihistamines or steroids to reduce inflammation, and in some cases allergy shots or medicated baths.",
+    "source": "Cornell University Veterinary College",
+    "source_url": "https://www.vet.cornell.edu"
+  },
+  {
+    "title": "Parvoviral Enteritis (Canine Parvovirus)",
+    "species": "Dog",
+    "breed": ["All Breeds"],
+    "condition_tags": ["infectious", "gastrointestinal"],
+    "symptom_list": ["loss of appetite", "lethargy", "vomiting", "diarrhea (often bloody)"],
+    "body_system": "Gastrointestinal",
+    "severity": "Severe",
+    "concise_summary": "A highly contagious viral infection causing severe gastrointestinal illness in puppies and unvaccinated dogs.",
+    "full_text": "Canine parvovirus infection is a highly contagious viral disease that causes acute, often hemorrhagic, enteritis in dogs. It primarily affects young, unvaccinated dogs. Clinical signs include sudden anorexia, depression, vomiting, and profuse diarrhea that is often bloody. Rapid fluid loss and secondary infections make parvovirus life-threatening. Treatment is supportive (IV fluids, anti-nausea drugs) and prevention is via vaccination.",
+    "source": "Merck Veterinary Manual",
+    "source_url": "https://www.merckvetmanual.com"
+  },
+  {
+    "title": "Heartworm Disease",
+    "species": "Dog",
+    "breed": ["All Breeds"],
+    "condition_tags": ["parasitic", "cardiovascular"],
+    "symptom_list": ["coughing", "exercise intolerance", "labored breathing", "weight loss", "ascites"],
+    "body_system": "Cardiovascular",
+    "severity": "Severe",
+    "concise_summary": "A parasitic infection by Dirofilaria immitis transmitted by mosquitoes, affecting heart and lungs.",
+    "full_text": "Heartworm disease is a life-threatening condition caused by Dirofilaria immitis parasites transmitted by mosquito bites. Adult worms reside in the heart and pulmonary arteries, causing vascular inflammation and cardiac stress. Common signs include a chronic cough, exercise intolerance, difficulty breathing, and sometimes fluid accumulation in the abdomen (ascites). Prevention with monthly preventives is critical, as treatment for mature heartworms is complex and risky.",
+    "source": "Merck Veterinary Manual",
+    "source_url": "https://www.merckvetmanual.com"
+  }
 ]
