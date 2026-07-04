@@ -243,30 +243,3 @@ module.exports = {
   retrieve:   retrieve
 };
 
-// ---------------------------------------------------------------------------
-// Self-test block — only runs when executed directly: node faissRetrieval.js
-// ---------------------------------------------------------------------------
-if (require.main === module) {
-  console.log('[faissRetrieval] Running standalone test...\n');
-
-  initialize()
-    .then(function() {
-      return retrieve('dog vomiting and lethargy', 3);
-    })
-    .then(function(results) {
-      console.log('[faissRetrieval] Top results for "dog vomiting and lethargy":\n');
-      results.forEach(function(r, i) {
-        console.log(
-          (i + 1) + '. ' + r.title +
-          ' (' + r.species + ') | score: ' + r.relevance_score.toFixed(6)
-        );
-        console.log('   Summary: ' + r.concise_summary);
-        console.log('   Symptoms: ' + r.symptom_list.join(', '));
-        console.log('');
-      });
-    })
-    .catch(function(err) {
-      console.error('[faissRetrieval] Test failed:', err.message);
-      process.exit(1);
-    });
-}

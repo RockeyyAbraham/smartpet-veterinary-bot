@@ -129,32 +129,3 @@ module.exports = {
   retrieve:   retrieve
 };
 
-// ---------------------------------------------------------------------------
-// Self-test block — only runs when executed directly: node hybridRetrieval.js
-// ---------------------------------------------------------------------------
-if (require.main === module) {
-  console.log('[hybridRetrieval] Running standalone test...\n');
-
-  initialize()
-    .then(function() {
-      return retrieve('dog limping and difficulty walking', 3);
-    })
-    .then(function(results) {
-      console.log('[hybridRetrieval] Top results for "dog limping and difficulty walking":\n');
-      results.forEach(function(r, i) {
-        console.log(
-          (i + 1) + '. ' + r.title +
-          ' (' + r.species + ')' +
-          ' | combined_score: ' + r.combined_score.toFixed(6) +
-          ' | relevance_score: ' + r.relevance_score.toFixed(6)
-        );
-        console.log('   Summary : ' + r.concise_summary);
-        console.log('   Symptoms: ' + r.symptom_list.join(', '));
-        console.log('');
-      });
-    })
-    .catch(function(err) {
-      console.error('[hybridRetrieval] Test failed:', err.message);
-      process.exit(1);
-    });
-}

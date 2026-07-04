@@ -147,26 +147,3 @@ module.exports = {
   retrieve: retrieve
 };
 
-// ---------------------------------------------------------------------------
-// Self-test block — only runs when executed directly: node hnswRetrieval.js
-// ---------------------------------------------------------------------------
-if (require.main === module) {
-  console.log('[hnswRetrieval] Running standalone test...\n');
-
-  retrieve('dog limping and difficulty walking', 3)
-    .then(function(results) {
-      console.log('[hnswRetrieval] Top results for "dog limping and difficulty walking":\n');
-      results.forEach(function(r, i) {
-        console.log(
-          (i + 1) + '. ' + r.title +
-          ' (' + r.species + ') | score: ' + r.relevance_score.toFixed(6)
-        );
-        console.log('   Summary: ' + r.concise_summary);
-        console.log('');
-      });
-    })
-    .catch(function(err) {
-      console.error('[hnswRetrieval] Test failed:', err.message);
-      process.exit(1);
-    });
-}

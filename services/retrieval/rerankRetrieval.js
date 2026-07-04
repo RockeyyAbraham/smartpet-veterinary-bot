@@ -20,6 +20,18 @@ const cohere = new CohereClient({
   token: process.env.COHERE_API_KEY
 });
 
+// ---------------------------------------------------------------------------
+// Configuration constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Number of FAISS candidates fetched in Stage 1 before reranking.
+ * A larger pool increases recall at the cost of more Cohere API tokens.
+ * Rule of thumb: 2–4× the expected final limit.
+ * Adjust upward as vet_kb grows beyond a few hundred records.
+ */
+const CANDIDATE_POOL_SIZE = 10;
+
 /**
  * Preloads FAISS dense vectors into memory.
  * Must be called before the first retrieve() call so that faissRetrieval
@@ -39,19 +51,23 @@ async function initialize() {
 
 /**
  * Performs two-stage retrieval:
- *   Stage 1 — FAISS dense retrieval (top 10 candidates via cosine similarity)
+ *   Stage 1 — FAISS dense retrieval (CANDIDATE_POOL_SIZE candidates via cosine similarity)
  *   Stage 2 — Cohere cross-encoder reranking (re-scores and reorders top-N)
  *
  * Why two stages?
  *   FAISS bi-encoder retrieval is fast but uses independent query/document
  *   embeddings. The Cohere cross-encoder sees both query and document together,
  *   producing more accurate relevance scores at the cost of higher latency.
- *   Fetching 10 candidates for reranking to limit = 5 is a common heuristic
- *   (2× candidate pool) that balances recall and reranker cost.
+ *   Fetching CANDIDATE_POOL_SIZE candidates before trimming to limit is a
+ *   standard heuristic that balances recall and reranker cost.
+ *
+ * Output schema additions vs. other retrieval modules:
+ *   relevance_score — Cohere cross-encoder score in [0, 1] (primary sort key)
+ *   faiss_score     — original FAISS cosine similarity score (for evaluation)
  *
  * @param {string} query     The user query string.
  * @param {number} [limit=5] Number of top results to return after reranking.
- * @returns {Promise<Array<object>>} Reranked veterinary records with relevance_score.
+ * @returns {Promise<Array<object>>} Reranked veterinary records with both scores.
  */
 async function retrieve(query, limit = 5) {
   if (!query || typeof query !== 'string') {
@@ -64,7 +80,7 @@ async function retrieve(query, limit = 5) {
     // ------------------------------------------------------------------
     let candidates = [];
     try {
-      candidates = await faissRetrieval.retrieve(query, 10);
+      candidates = await faissRetrieval.retrieve(query, CANDIDATE_POOL_SIZE);
     } catch (faissErr) {
       console.error('[rerankRetrieval] FAISS retrieval failed:', faissErr.message);
       throw new Error('[rerankRetrieval] Stage 1 (FAISS) failed: ' + faissErr.message);
@@ -123,7 +139,8 @@ async function retrieve(query, limit = 5) {
         full_text:       original.full_text       || '',
         source:          original.source          || '',
         source_url:      original.source_url      || '',
-        relevance_score: item.relevanceScore
+        relevance_score: item.relevanceScore,
+        faiss_score:     original.relevance_score
       };
     });
   } catch (err) {
@@ -137,47 +154,3 @@ module.exports = {
   retrieve:   retrieve
 };
 
-// ---------------------------------------------------------------------------
-// Self-test block — only runs when executed directly: node rerankRetrieval.js
-// ---------------------------------------------------------------------------
-if (require.main === module) {
-  console.log('[rerankRetrieval] Running standalone test...\n');
-
-  const TEST_QUERY = 'dog vomiting and not eating for 3 days';
-  const TEST_LIMIT = 3;
-
-  initialize()
-    .then(function() {
-      // Fetch raw FAISS results for comparison
-      return faissRetrieval.retrieve(TEST_QUERY, TEST_LIMIT);
-    })
-    .then(function(faissResults) {
-      console.log('[rerankRetrieval] --- FAISS order (before reranking) ---');
-      faissResults.forEach(function(r, i) {
-        console.log(
-          (i + 1) + '. ' + r.title +
-          ' (' + r.species + ') | faiss_score: ' + r.relevance_score.toFixed(6)
-        );
-        console.log('   Summary: ' + r.concise_summary);
-        console.log('');
-      });
-
-      // Now run the full two-stage rerank pipeline
-      return retrieve(TEST_QUERY, TEST_LIMIT);
-    })
-    .then(function(rerankedResults) {
-      console.log('[rerankRetrieval] --- Reranked order (after Cohere cross-encoder) ---');
-      rerankedResults.forEach(function(r, i) {
-        console.log(
-          (i + 1) + '. ' + r.title +
-          ' (' + r.species + ') | rerank_score: ' + r.relevance_score.toFixed(6)
-        );
-        console.log('   Summary: ' + r.concise_summary);
-        console.log('');
-      });
-    })
-    .catch(function(err) {
-      console.error('[rerankRetrieval] Test failed:', err.message);
-      process.exit(1);
-    });
-}
