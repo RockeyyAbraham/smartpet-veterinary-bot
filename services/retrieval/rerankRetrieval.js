@@ -108,6 +108,11 @@ async function retrieve(query, limit = 5) {
         documents: documents,
         topN:      limit
       });
+      
+      // Delay for 6 seconds to respect Cohere's 10 calls/min free tier limit
+      await new Promise(function(resolve) {
+        setTimeout(resolve, 6000);
+      });
     } catch (cohereErr) {
       console.error('[rerankRetrieval] Cohere rerank API call failed:', cohereErr.message);
       throw new Error('[rerankRetrieval] Stage 2 (Cohere rerank) failed: ' + cohereErr.message);
