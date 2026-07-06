@@ -1,16 +1,16 @@
 // Load environment variables first — must be before any retrieval module require()
 require('dotenv').config();
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 
 // ---------------------------------------------------------------------------
 // Retrieval methods
 // ---------------------------------------------------------------------------
-const faissRetrieval  = require('../retrieval/faissRetrieval');
-const bm25Retrieval   = require('../retrieval/bm25Retrieval');
-const hnswRetrieval   = require('../retrieval/hnswRetrieval');
+const faissRetrieval = require('../retrieval/faissRetrieval');
+const bm25Retrieval = require('../retrieval/bm25Retrieval');
+const hnswRetrieval = require('../retrieval/hnswRetrieval');
 const hybridRetrieval = require('../retrieval/hybridRetrieval');
 const rerankRetrieval = require('../retrieval/rerankRetrieval');
 // const graphRetrieval  = require('../retrieval/graphRetrieval');
@@ -19,15 +19,15 @@ const rerankRetrieval = require('../retrieval/rerankRetrieval');
 // Evaluation data and metrics
 // ---------------------------------------------------------------------------
 const testQueriesModule = require('./testQueries');
-const metricsModule     = require('./metrics');
+const metricsModule = require('./metrics');
 
-const testQueries       = testQueriesModule.testQueries;
-const precisionAtK      = metricsModule.precisionAtK;
-const recallAtK         = metricsModule.recallAtK;
+const testQueries = testQueriesModule.testQueries;
+const precisionAtK = metricsModule.precisionAtK;
+const recallAtK = metricsModule.recallAtK;
 const meanReciprocalRank = metricsModule.meanReciprocalRank;
-const ndcgAtK           = metricsModule.ndcgAtK;
-const measureLatency    = metricsModule.measureLatency;
-const averageMetrics    = metricsModule.averageMetrics;
+const ndcgAtK = metricsModule.ndcgAtK;
+const measureLatency = metricsModule.measureLatency;
+const averageMetrics = metricsModule.averageMetrics;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -90,22 +90,22 @@ async function runMethodEvaluation(methodName, retrieveFn, queries) {
     var endTime = Date.now();
 
     // Extract title strings from result objects
-    var retrievedTitles = results.map(function(r) {
+    var retrievedTitles = results.map(function (r) {
       return r.title || '';
     });
 
-    var latency    = measureLatency(startTime, endTime);
-    var precision  = precisionAtK(retrievedTitles, relevantTitles, K);
-    var recall     = recallAtK(retrievedTitles, relevantTitles, K);
-    var mrr        = meanReciprocalRank(retrievedTitles, relevantTitles);
-    var ndcg       = ndcgAtK(retrievedTitles, relevantTitles, K);
+    var latency = measureLatency(startTime, endTime);
+    var precision = precisionAtK(retrievedTitles, relevantTitles, K);
+    var recall = recallAtK(retrievedTitles, relevantTitles, K);
+    var mrr = meanReciprocalRank(retrievedTitles, relevantTitles);
+    var ndcg = ndcgAtK(retrievedTitles, relevantTitles, K);
 
     perQueryMetrics.push({
-      precision:  precision,
-      recall:     recall,
-      mrr:        mrr,
-      ndcg:       ndcg,
-      latencyMs:  latency
+      precision: precision,
+      recall: recall,
+      mrr: mrr,
+      ndcg: ndcg,
+      latencyMs: latency
     });
 
     // Progress dot every 10 queries
@@ -117,13 +117,13 @@ async function runMethodEvaluation(methodName, retrieveFn, queries) {
   var averaged = averageMetrics(perQueryMetrics);
 
   return {
-    method:          methodName,
-    avgPrecisionAtK: averaged.precision  || 0,
-    avgRecallAtK:    averaged.recall     || 0,
-    avgMRR:          averaged.mrr        || 0,
-    avgNDCG:         averaged.ndcg       || 0,
-    avgLatencyMs:    averaged.latencyMs  || 0,
-    totalQueries:    queries.length
+    method: methodName,
+    avgPrecisionAtK: averaged.precision || 0,
+    avgRecallAtK: averaged.recall || 0,
+    avgMRR: averaged.mrr || 0,
+    avgNDCG: averaged.ndcg || 0,
+    avgLatencyMs: averaged.latencyMs || 0,
+    totalQueries: queries.length
   };
 }
 
@@ -213,9 +213,9 @@ function printWinnersAndRecommendation(results) {
   console.log('\n[runEvaluation] WINNERS BY METRIC\n');
 
   printWinner(results, 'avgPrecisionAtK', 'Precision@' + K);
-  printWinner(results, 'avgRecallAtK',    'Recall@' + K);
-  printWinner(results, 'avgMRR',          'MRR');
-  printWinner(results, 'avgNDCG',         'NDCG@' + K);
+  printWinner(results, 'avgRecallAtK', 'Recall@' + K);
+  printWinner(results, 'avgMRR', 'MRR');
+  printWinner(results, 'avgNDCG', 'NDCG@' + K);
 
   // Fastest method (lowest latency)
   var fastest = results[0];
@@ -228,12 +228,12 @@ function printWinnersAndRecommendation(results) {
 
   // Overall recommendation — simple combined score: P + R + MRR + NDCG (equal weights)
   var bestCombined = results[0];
-  var bestScore    = results[0].avgPrecisionAtK + results[0].avgRecallAtK + results[0].avgMRR + results[0].avgNDCG;
+  var bestScore = results[0].avgPrecisionAtK + results[0].avgRecallAtK + results[0].avgMRR + results[0].avgNDCG;
 
   for (var j = 1; j < results.length; j++) {
     var score = results[j].avgPrecisionAtK + results[j].avgRecallAtK + results[j].avgMRR + results[j].avgNDCG;
     if (score > bestScore) {
-      bestScore    = score;
+      bestScore = score;
       bestCombined = results[j];
     }
   }
@@ -259,11 +259,11 @@ function printWinnersAndRecommendation(results) {
  * @returns {Promise<void>}
  */
 function generateReport(results, outputPath) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     try {
       var doc = new PDFDocument({ margin: 50 });
       var stream = fs.createWriteStream(outputPath);
-      
+
       doc.pipe(stream);
 
       // Title
@@ -282,14 +282,14 @@ function generateReport(results, outputPath) {
       doc.text('MRR', 320, startY);
       doc.text('NDCG@' + K, 380, startY);
       doc.text('Latency(ms)', 460, startY);
-      
+
       doc.moveTo(50, startY + 15).lineTo(550, startY + 15).stroke();
       doc.moveDown();
 
       // Table Rows
       doc.font('Helvetica');
       var currentY = startY + 25;
-      
+
       for (var i = 0; i < results.length; i++) {
         var r = results[i];
         doc.text(r.method, 50, currentY);
@@ -306,9 +306,9 @@ function generateReport(results, outputPath) {
       currentY = doc.y;
       doc.font('Helvetica-Bold').fontSize(14).text('Winners by Metric', 50, currentY);
       doc.moveDown();
-      
+
       doc.font('Helvetica').fontSize(12);
-      
+
       function getWinner(field) {
         var best = results[0];
         for (var j = 1; j < results.length; j++) {
@@ -316,12 +316,12 @@ function generateReport(results, outputPath) {
         }
         return best;
       }
-      
+
       var bestP = getWinner('avgPrecisionAtK');
       var bestR = getWinner('avgRecallAtK');
       var bestM = getWinner('avgMRR');
       var bestN = getWinner('avgNDCG');
-      
+
       var fastest = results[0];
       for (var f = 1; f < results.length; f++) {
         if (results[f].avgLatencyMs < fastest.avgLatencyMs) fastest = results[f];
@@ -335,10 +335,10 @@ function generateReport(results, outputPath) {
 
       doc.end();
 
-      stream.on('finish', function() {
+      stream.on('finish', function () {
         resolve();
       });
-      stream.on('error', function(err) {
+      stream.on('error', function (err) {
         reject(err);
       });
     } catch (err) {
@@ -414,6 +414,8 @@ async function main() {
     console.error('[runEvaluation] Hybrid evaluation error:', err.message);
   }
 
+
+
   // ---- Rerank (FAISS + Cohere) ---------------------------------------------
   try {
     var rerankResult = await runMethodEvaluation('Rerank (FAISS+Cohere)', rerankRetrieval.retrieve, testQueries);
@@ -441,7 +443,7 @@ async function main() {
 
   // Generate PDF report instead of JSON
   var outputPath = path.join(__dirname, 'results.pdf');
-  
+
   try {
     await generateReport(allResults, outputPath);
     var fileUri = 'file:///' + outputPath.replace(/\\/g, '/');
@@ -454,7 +456,7 @@ async function main() {
   // }
 }
 
-main().catch(function(err) {
+main().catch(function (err) {
   console.error('[runEvaluation] Unhandled error in main():', err.message);
   process.exit(1);
 });
