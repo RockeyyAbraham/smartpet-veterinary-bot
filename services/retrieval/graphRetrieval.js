@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const neo4j      = require('neo4j-driver');
 const supabaseJs = require('@supabase/supabase-js');
-const googleGenAi = require('@google/genai');
+const Groq = require('groq-sdk');
 const ws          = require('ws');
 
 // ---------------------------------------------------------------------------
@@ -33,15 +33,19 @@ const supabase = supabaseJs.createClient(
 );
 
 // ---------------------------------------------------------------------------
-// Gemini text-generation client (new @google/genai SDK, NOT the embedding model)
+// Groq client — used for entity extraction (LLaMA 3 model).
+// Groq free tier: 14,400 requests/day — far more generous than Gemini Flash.
 // ---------------------------------------------------------------------------
-const genAI = new googleGenAi.GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
 
 /**
- * Uses Gemini (gemini-2.0-flash) to extract symptom and breed names from a
- * natural-language veterinary query.
+ * Uses Groq (llama-3.3-70b-versatile) to extract symptom and breed names from
+ * a natural-language veterinary query.
  *
- * Uses the new @google/genai SDK (not the deprecated @google/generative-ai).
+ * Groq is used instead of Gemini Flash because the Gemini free-tier
+ * generate_content daily quota is easily exhausted; Groq's free tier allows
+ * 14,400 requests/day for LLaMA models.
+ *
  * The model is instructed to return only raw JSON with no markdown wrapping.
  *
  * @param {string} query  The user's natural-language query.
@@ -49,19 +53,27 @@ const genAI = new googleGenAi.GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY |
  */
 async function extractEntities(query) {
   try {
-    var prompt =
-      'Extract symptoms and breed names from this veterinary query.\n' +
-      'Return ONLY a valid JSON object with no markdown, no backticks,\n' +
-      'no explanation. Format exactly like this:\n' +
-      '{"symptoms": ["symptom1", "symptom2"], "breeds": ["breed1"]}\n' +
-      'Query: ' + query;
-
-    var response = await genAI.models.generateContent({
-      model:    'gemini-2.0-flash',
-      contents: prompt
+    var chatCompletion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a veterinary NLP assistant. Extract symptoms and breed names ' +
+            'from the user query. Return ONLY a valid JSON object with no markdown, ' +
+            'no backticks, no explanation. Format exactly like this: ' +
+            '{"symptoms": ["symptom1", "symptom2"], "breeds": ["breed1"]}'
+        },
+        {
+          role: 'user',
+          content: query
+        }
+      ],
+      temperature: 0,
+      max_tokens: 256
     });
 
-    var responseText = response.text.trim();
+    var responseText = chatCompletion.choices[0].message.content.trim();
 
     // Strip any accidental markdown fences if the model adds them
     if (responseText.startsWith('```')) {

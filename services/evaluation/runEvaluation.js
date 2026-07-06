@@ -13,7 +13,7 @@ const bm25Retrieval = require('../retrieval/bm25Retrieval');
 const hnswRetrieval = require('../retrieval/hnswRetrieval');
 const hybridRetrieval = require('../retrieval/hybridRetrieval');
 const rerankRetrieval = require('../retrieval/rerankRetrieval');
-// const graphRetrieval  = require('../retrieval/graphRetrieval');
+const graphRetrieval  = require('../retrieval/graphRetrieval');
 
 // ---------------------------------------------------------------------------
 // Evaluation data and metrics
@@ -424,13 +424,13 @@ async function main() {
     console.error('[runEvaluation] Rerank evaluation error:', err.message);
   }
 
-  // ---- GraphRAG (Neo4j + Gemini) -------------------------------------------
-  // try {
-  //   var graphResult = await runMethodEvaluation('GraphRAG', graphRetrieval.retrieve, testQueries);
-  //   allResults.push(graphResult);
-  // } catch (err) {
-  //   console.error('[runEvaluation] GraphRAG evaluation error:', err.message);
-  // }
+  // ---- GraphRAG (Neo4j + Groq LLaMA) ----------------------------------------
+  try {
+    var graphResult = await runMethodEvaluation('GraphRAG', graphRetrieval.retrieve, testQueries);
+    allResults.push(graphResult);
+  } catch (err) {
+    console.error('[runEvaluation] GraphRAG evaluation error:', err.message);
+  }
 
   if (allResults.length === 0) {
     console.error('[runEvaluation] No results collected — aborting.');
@@ -451,9 +451,9 @@ async function main() {
   } catch (writeErr) {
     console.error('[runEvaluation] Failed to save results.pdf:', writeErr.message);
   }
-  // finally {
-  //   await graphRetrieval.closeDriver();
-  // }
+
+  // Close the Neo4j driver opened by graphRetrieval
+  await graphRetrieval.closeDriver();
 }
 
 main().catch(function (err) {
