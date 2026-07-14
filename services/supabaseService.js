@@ -1,9 +1,9 @@
 const supabaseJs = require('@supabase/supabase-js');
-const googleGenAi = require('@google/generative-ai');
 const ws = require('ws');
+const embeddingService = require('./embeddingService');
 
 const createClient = supabaseJs.createClient;
-const GoogleGenerativeAI = googleGenAi.GoogleGenerativeAI;
+const getEmbedding = embeddingService.getEmbedding;
 
 // Initialize Supabase Client with WebSocket compatibility for older Node versions
 const supabaseOptions = {
@@ -16,27 +16,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY,
   supabaseOptions
 );
-
-// Initialize Gemini Client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-/**
- * Generates vector embeddings for a given text query using Google Gemini models/gemini-embedding-001.
- * 
- * @param {string} text The text to embed.
- * @returns {Promise<number[]>} The vector embedding array.
- */
-async function getEmbedding(text) {
-  try {
-    const model = genAI.getGenerativeModel({ model: 'models/gemini-embedding-001' });
-    const result = await model.embedContent(text);
-    const embedding = result.embedding;
-    return embedding.values;
-  } catch (error) {
-    console.error('Embedding generation failed:', error);
-    throw new Error('Failed to generate embedding');
-  }
-}
 
 /**
  * Queries Supabase using match_pet_profiles RPC and returns a single concatenated context string.

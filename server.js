@@ -4,7 +4,6 @@ require('dotenv').config();
 const requiredEnvVars = [
   'SUPABASE_URL',
   'SUPABASE_SERVICE_KEY',
-  'GEMINI_API_KEY',
   'GROQ_API_KEY'
 ];
 

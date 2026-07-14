@@ -7,17 +7,16 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('dotenv').config();
 
 const supabaseJs = require('@supabase/supabase-js');
-const googleGenAi = require('@google/generative-ai');
 const ws = require('ws');
+const embeddingService = require('../services/embeddingService');
 
 const createClient = supabaseJs.createClient;
-const GoogleGenerativeAI = googleGenAi.GoogleGenerativeAI;
+const getEmbedding = embeddingService.getEmbedding;
 
 // Validate environment variables first
 const requiredEnvVars = [
   'SUPABASE_URL',
-  'SUPABASE_SERVICE_KEY',
-  'GEMINI_API_KEY'
+  'SUPABASE_SERVICE_KEY'
 ];
 
 for (let i = 0; i < requiredEnvVars.length; i++) {
@@ -39,22 +38,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY,
   supabaseOptions
 );
-
-// Initialize Gemini Client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-/**
- * Generates vector embeddings for a given text query using Google Gemini models/gemini-embedding-001.
- * 
- * @param {string} text The text to embed.
- * @returns {Promise<number[]>} The vector embedding array.
- */
-async function getEmbedding(text) {
-  const model = genAI.getGenerativeModel({ model: 'models/gemini-embedding-001' });
-  const result = await model.embedContent(text);
-  const embedding = result.embedding;
-  return embedding.values;
-}
 
 async function run() {
   const dataPath = path.join(__dirname, 'vet_kb_data.json');
@@ -95,16 +78,11 @@ async function run() {
     try {
       console.log(`Generating embedding for "${entry.title}" from full_text...`);
       embedding = await getEmbedding(entry.full_text);
-      
-      // Log exactly what is requested: console.log("Embedding dimensions:", embedding.length);
-      console.log("Embedding dimensions:", embedding.length);
-      
-      // Slicing to 768 dimensions if the model returned 3072 dimensions
-      if (embedding.length > 768) {
-        embedding = embedding.slice(0, 768);
-      }
+
+      // Log the dimension produced by the MiniLM model (should be 384)
+      console.log('Embedding dimensions:', embedding.length);
     } catch (embError) {
-      console.error(`Gemini embedding error for entry "${entry.title}":`, embError.message || embError);
+      console.error(`Embedding error for entry "${entry.title}":`, embError.message || embError);
       continue;
     }
 

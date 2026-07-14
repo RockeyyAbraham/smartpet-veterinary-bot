@@ -2,11 +2,11 @@
 require('dotenv').config();
 
 const supabaseJs = require('@supabase/supabase-js');
-const googleGenAi = require('@google/generative-ai');
 const ws = require('ws');
+const embeddingService = require('../embeddingService');
 
 const createClient = supabaseJs.createClient;
-const GoogleGenerativeAI = googleGenAi.GoogleGenerativeAI;
+const getEmbedding = embeddingService.getEmbedding;
 
 // ---------------------------------------------------------------------------
 // NOTE: Unlike faissRetrieval.js, this module does NOT build an in-memory
@@ -44,38 +44,11 @@ const supabase = createClient(
   supabaseOptions
 );
 
-// ---------------------------------------------------------------------------
-// Gemini embedding client (same model and dimensions used by ingestion pipeline)
-// ---------------------------------------------------------------------------
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-/**
- * Generates a 768-dimensional embedding vector for the given text using the
- * same Gemini model used during vet_kb ingestion.
- *
- * @param {string} text  The text to embed.
- * @returns {Promise<number[]>}  A 768-dimensional float array.
- */
-async function getEmbedding(text) {
-  try {
-    const model = genAI.getGenerativeModel({ model: 'models/gemini-embedding-001' });
-    const result = await model.embedContent(text);
-    let values = result.embedding.values;
-    // Slice to 768 dims to match the stored embeddings (ingestion pipeline does the same)
-    if (values.length > 768) {
-      values = values.slice(0, 768);
-    }
-    return values;
-  } catch (err) {
-    throw new Error('[hnswRetrieval] Failed to generate embedding: ' + err.message);
-  }
-}
-
 /**
  * Performs HNSW approximate nearest neighbor retrieval via Supabase pgvector.
  *
  * Workflow:
- *   User query → Gemini embedding → Supabase RPC (HNSW index scan) → top-K results
+ *   User query → MiniLM embedding → Supabase RPC (HNSW index scan) → top-K results
  *
  * The match_vet_kb RPC function uses the cosine distance operator
  * (embedding <=> query_embedding) which automatically leverages the HNSW
@@ -91,7 +64,7 @@ async function retrieve(query, limit = 5) {
   }
 
   try {
-    // Generate query embedding using the same Gemini model as ingestion
+    // Generate query embedding using the fine-tuned MiniLM model
     let queryEmbedding;
     try {
       queryEmbedding = await getEmbedding(query);
