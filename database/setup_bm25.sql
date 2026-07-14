@@ -1,10 +1,8 @@
--- SQL script to prepare PostgreSQL Full Text Search for the vet_kb table
+ALTER TABLE vet_kb
+ADD COLUMN IF NOT EXISTS fts tsvector;
 
--- 1. Create a generated tsvector column on the vet_kb table
--- This column automatically concatenates and tokenizes the relevant text columns,
--- assigning higher weights ('A') to titles and summaries, and lower weights to full text and metadata.
-ALTER TABLE vet_kb 
-ADD COLUMN IF NOT EXISTS fts tsvector GENERATED ALWAYS AS (
+UPDATE vet_kb
+SET fts =
   setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
   setweight(to_tsvector('english', coalesce(concise_summary, '')), 'B') ||
   setweight(to_tsvector('english', coalesce(body_system, '')), 'B') ||
@@ -12,8 +10,7 @@ ADD COLUMN IF NOT EXISTS fts tsvector GENERATED ALWAYS AS (
   setweight(to_tsvector('english', coalesce(array_to_string(symptom_list, ' '), '')), 'C') ||
   setweight(to_tsvector('english', coalesce(array_to_string(condition_tags, ' '), '')), 'C') ||
   setweight(to_tsvector('english', coalesce(array_to_string(breed, ' '), '')), 'D') ||
-  setweight(to_tsvector('english', coalesce(full_text, '')), 'D')
-) STORED;
+  setweight(to_tsvector('english', coalesce(full_text, '')), 'D');
 
 -- 2. Create a GIN index for fast full-text search
 CREATE INDEX IF NOT EXISTS vet_kb_fts_idx ON vet_kb USING gin(fts);
