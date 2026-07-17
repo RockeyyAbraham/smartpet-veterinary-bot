@@ -36,6 +36,17 @@ const averageMetrics = metricsModule.averageMetrics;
 /** Rank cut-off used for all @K metrics */
 var K = 5;
 
+/**
+ * Cohere free-tier imposes a rate limit of 10 calls/minute.
+ * rerankRetrieval.js includes a hardcoded 6-second sleep after every Cohere
+ * API call to stay within this limit. This constant is subtracted from Rerank
+ * latency measurements so the comparison table reflects real processing time
+ * (FAISS retrieval + Cohere API round-trip) rather than artificial sleep time.
+ *
+ * Disclosed in the PDF report footnote.
+ */
+var RERANK_COHERE_SLEEP_MS = 6000;
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -59,7 +70,11 @@ function printSeparator() {
  *   2. Extracts titles from the result array.
  *   3. Computes Precision@K, Recall@K, MRR, NDCG@K, and latency.
  *
- * Returns an aggregated result object suitable for comparison tables.
+ * For the Rerank method only: the RERANK_COHERE_SLEEP_MS constant is subtracted
+ * from each per-query latency measurement. This corrects for a 6-second sleep
+ * that rerankRetrieval.js inserts to respect the Cohere free-tier rate limit.
+ * The sleep is a deployment constraint, not retrieval cost, so removing it gives
+ * a fair comparison. The PDF footnote discloses this adjustment.
  *
  * @param {string}   methodName  Human-readable label for this method.
  * @param {Function} retrieveFn  Async function (query, limit) => results[].
@@ -69,6 +84,9 @@ function printSeparator() {
 async function runMethodEvaluation(methodName, retrieveFn, queries) {
   console.log('\n[runEvaluation] Evaluating: ' + methodName + ' (' + queries.length + ' queries)');
   printSeparator();
+
+  // Whether to strip the Cohere rate-limit sleep from this method's latency
+  var isRerank = methodName === 'Rerank (FAISS+Cohere)';
 
   var perQueryMetrics = [];
 
@@ -94,7 +112,14 @@ async function runMethodEvaluation(methodName, retrieveFn, queries) {
       return r.title || '';
     });
 
-    var latency = measureLatency(startTime, endTime);
+    var rawLatency = measureLatency(startTime, endTime);
+
+    // For Rerank: subtract the hardcoded Cohere sleep so latency reflects
+    // real retrieval cost. Floor at 0 to handle any edge-case timing.
+    var latency = isRerank
+      ? Math.max(0, rawLatency - RERANK_COHERE_SLEEP_MS)
+      : rawLatency;
+
     var precision = precisionAtK(retrievedTitles, relevantTitles, K);
     var recall = recallAtK(retrievedTitles, relevantTitles, K);
     var mrr = meanReciprocalRank(retrievedTitles, relevantTitles);
@@ -332,6 +357,18 @@ function generateReport(results, outputPath) {
       doc.text('Best MRR: ' + bestM.method + ' (' + bestM.avgMRR.toFixed(4) + ')');
       doc.text('Best NDCG@' + K + ': ' + bestN.method + ' (' + bestN.avgNDCG.toFixed(4) + ')');
       doc.text('Fastest: ' + fastest.method + ' (' + fastest.avgLatencyMs.toFixed(0) + ' ms avg)');
+
+      // Methodology footnote
+      doc.moveDown(2);
+      doc.font('Helvetica-Oblique').fontSize(9);
+      doc.text(
+        'Methodology Note: Rerank (FAISS+Cohere) latency figures exclude a 6-second per-query ' +
+        'sleep introduced to comply with the Cohere free-tier rate limit (10 req/min). ' +
+        'This sleep is a deployment constraint, not a retrieval cost. ' +
+        'Actual wall-clock time per Rerank query is ~6 seconds higher than the value shown. ' +
+        'All other methods report unmodified wall-clock latency.',
+        { width: 500 }
+      );
 
       doc.end();
 

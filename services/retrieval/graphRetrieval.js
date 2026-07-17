@@ -239,7 +239,7 @@ async function fetchFullDocuments(titles) {
  *
  * Workflow:
  *   User query
- *     → Gemini entity extraction (symptoms + breeds)
+ *     → Groq (LLaMA) entity extraction (symptoms + breeds)
  *     → Neo4j Cypher traversal (find matching Conditions)
  *     → Supabase document lookup (fetch full records by title)
  *     → Standard output schema with graph-derived relevance_score
@@ -260,7 +260,7 @@ async function retrieve(query, limit) {
   var session = driver.session({ database: process.env.NEO4J_DATABASE || 'neo4j' });
 
   try {
-    // Stage 1: Extract entities from the query using Gemini
+    // Stage 1: Extract entities from the query using Groq (LLaMA 3)
     var entities = await extractEntities(query);
     console.log('[graphRetrieval] Extracted entities:', JSON.stringify(entities));
 
