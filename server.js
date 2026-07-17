@@ -24,6 +24,7 @@ const supabaseService = require('./services/supabaseService');
 const llmService = require('./services/llmService');
 const memoryService = require('./services/memoryService');
 const ingestionService = require('./services/ingestionService');
+const hybridRetrieval = require('./services/retrieval/hybridRetrieval');
 
 // Initialize server
 const app = express();
@@ -80,8 +81,20 @@ async function handleChatRequest(req, res) {
       return;
     }
 
-    // 4. Build prompt passing retrieved context, user message, and history
-    const finalPrompt = buildPrompt(retrievedContext, message, history);
+    // 4. Retrieve general veterinary knowledge
+    const vetKbResults = await hybridRetrieval.retrieve(message, 3);
+    let vetKbContextString = "";
+    if (vetKbResults && vetKbResults.length > 0) {
+      const formattedKb = [];
+      for (let i = 0; i < vetKbResults.length; i++) {
+        const item = vetKbResults[i];
+        formattedKb.push(`Title: ${item.title || 'Unknown'}\nInformation: ${item.full_text || item.concise_summary || ''}`);
+      }
+      vetKbContextString = formattedKb.join('\n---\n');
+    }
+
+    // 5. Build prompt passing retrieved context, vet KB context, user message, and history
+    const finalPrompt = buildPrompt(retrievedContext, vetKbContextString, message, history);
 
     // 5. Call Groq with built prompt
     const responseText = await llmService.generateResponse(finalPrompt);
@@ -153,7 +166,18 @@ app.post('/api/ingest', handleIngestRequest);
 // Mount global error handler
 app.use(globalErrorHandler);
 
-// Start server
-app.listen(port, function() {
-  console.log('Express server listening on port ' + port);
-});
+// Initialize retrieval and start server
+async function startServer() {
+  try {
+    await hybridRetrieval.initialize();
+    console.log('Hybrid retrieval initialized');
+  } catch (err) {
+    console.error('Failed to initialize hybrid retrieval:', err);
+  }
+  
+  app.listen(port, function() {
+    console.log('Express server listening on port ' + port);
+  });
+}
+
+startServer();

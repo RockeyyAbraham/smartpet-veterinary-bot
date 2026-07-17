@@ -1,13 +1,14 @@
 /**
  * Builds the prompt template for the SmartPet AI veterinary triage assistant.
- * Uses ONLY the retrieved context as the pet profile source of truth.
+ * Uses retrieved pet profile and general veterinary knowledge base.
  *
- * @param {string} retrievedContext The vector search retrieved context from the database.
+ * @param {string} retrievedContext The vector search retrieved context for the pet profile.
+ * @param {string} vetKbContext The vector search retrieved context from the general veterinary knowledge base.
  * @param {string} userMessage The symptom or message sent by the user.
  * @param {object[]} history The array of conversation history turns.
  * @returns {string} The complete system + context + message prompt string.
  */
-function buildPrompt(retrievedContext, userMessage, history) {
+function buildPrompt(retrievedContext, vetKbContext, userMessage, history) {
   let historyText = "";
   if (history && history.length > 0) {
     const historyLines = [];
@@ -23,9 +24,10 @@ const instructions =
 
 "IMPORTANT INSTRUCTIONS:\n" +
 
-"1. Use ONLY the retrieved pet profile context below as your source of truth for the pet's history.\n" +
-"2. Address ONLY the symptom or concern that the user explicitly described in their message.\n" +
-"3. Never invent, assume, or extrapolate symptoms, conditions, or medical history not explicitly mentioned in the retrieved context or conversation history.\n" +
+"1. Use the retrieved pet profile context as your absolute source of truth for the pet's specific history.\n" +
+"2. Use the general veterinary knowledge context to guide your medical assessment, possible causes, and recommendations.\n" +
+"3. Address ONLY the symptom or concern that the user explicitly described in their message.\n" +
+"4. Never invent, assume, or extrapolate symptoms, conditions, or medical history not explicitly mentioned in the pet profile context or conversation history.\n" +
 "4. Reference the pet's allergies, breed, age, weight, surgery history, or medical history ONLY when they are relevant to the symptom being discussed.\n" +
 
 "5. Provide a detailed but concise veterinary assessment. Responses should typically be between 100 and 150 words when sufficient information is available.\n" +
@@ -80,6 +82,11 @@ const instructions =
 "RETRIEVED PET PROFILE CONTEXT:\n" +
 "====================================\n" +
 retrievedContext + "\n" +
+"====================================\n\n" +
+
+"VETERINARY KNOWLEDGE CONTEXT:\n" +
+"====================================\n" +
+(vetKbContext || "No additional general knowledge retrieved.") + "\n" +
 "====================================\n\n" +
 
 historyText +
