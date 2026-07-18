@@ -28,6 +28,7 @@ const meanReciprocalRank = metricsModule.meanReciprocalRank;
 const ndcgAtK = metricsModule.ndcgAtK;
 const measureLatency = metricsModule.measureLatency;
 const averageMetrics = metricsModule.averageMetrics;
+const statsModule = require('./stats.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -126,6 +127,7 @@ async function runMethodEvaluation(methodName, retrieveFn, queries) {
     var ndcg = ndcgAtK(retrievedTitles, relevantTitles, K);
 
     perQueryMetrics.push({
+      query: query,
       precision: precision,
       recall: recall,
       mrr: mrr,
@@ -141,6 +143,10 @@ async function runMethodEvaluation(methodName, retrieveFn, queries) {
 
   var averaged = averageMetrics(perQueryMetrics);
 
+  var failedQueries = perQueryMetrics
+    .filter(function(m) { return m.ndcg === 0; })
+    .map(function(m) { return m.query; });
+
   return {
     method: methodName,
     avgPrecisionAtK: averaged.precision || 0,
@@ -148,7 +154,9 @@ async function runMethodEvaluation(methodName, retrieveFn, queries) {
     avgMRR: averaged.mrr || 0,
     avgNDCG: averaged.ndcg || 0,
     avgLatencyMs: averaged.latencyMs || 0,
-    totalQueries: queries.length
+    totalQueries: queries.length,
+    perQueryMetrics: perQueryMetrics,
+    failedQueries: failedQueries
   };
 }
 
@@ -369,6 +377,23 @@ function generateReport(results, outputPath) {
         'All other methods report unmodified wall-clock latency.',
         { width: 500 }
       );
+
+      // --- STATISTICAL SIGNIFICANCE (appended to first page) ---
+      doc.moveDown(2);
+      doc.font('Helvetica-Bold').fontSize(12).text('Statistical Significance Analysis');
+      doc.moveDown(0.5);
+      
+      var sortedByNdcg = results.slice().sort(function(a, b) { return b.avgNDCG - a.avgNDCG; });
+      if (sortedByNdcg.length >= 2) {
+        var best = sortedByNdcg[0];
+        var second = sortedByNdcg[1];
+        var statResult = statsModule.wilcoxonSignedRank(best.perQueryMetrics, second.perQueryMetrics);
+        
+        doc.font('Helvetica').fontSize(10);
+        doc.text('Comparing Best (' + best.method + ') vs Second Best (' + second.method + ') using Wilcoxon Signed-Rank Test:');
+        doc.text('p-value: ' + statResult.pValue.toFixed(4) + (statResult.significant ? ' (Statistically Significant at alpha=0.05)' : ' (Not statistically significant)'));
+        doc.text('This confirms whether the top method\'s performance advantage is scientifically robust.');
+      }
 
       doc.end();
 

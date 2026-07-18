@@ -262,7 +262,6 @@ async function retrieve(query, limit) {
   try {
     // Stage 1: Extract entities from the query using Groq (LLaMA 3)
     var entities = await extractEntities(query);
-    console.log('[graphRetrieval] Extracted entities:', JSON.stringify(entities));
 
     var hasSymptoms = entities.symptoms && entities.symptoms.length > 0;
     var hasBreeds   = entities.breeds   && entities.breeds.length   > 0;
@@ -274,7 +273,6 @@ async function retrieve(query, limit) {
 
     // Stage 2: Traverse the Neo4j graph to score matching conditions
     var graphMatches = await queryGraph(session, entities);
-    console.log('[graphRetrieval] Graph matches: ' + graphMatches.length + ' conditions found');
 
     if (graphMatches.length === 0) {
       return [];
