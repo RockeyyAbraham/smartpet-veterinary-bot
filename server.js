@@ -20,10 +20,8 @@ const ws = require('ws'); // Keep WebSocket fix for compatibility
 const buildPrompt = require('./prompt');
 
 // Import services without destructuring
-const supabaseService = require('./services/supabaseService');
 const llmService = require('./services/llmService');
 const memoryService = require('./services/memoryService');
-const ingestionService = require('./services/ingestionService');
 const hybridRetrieval = require('./services/retrieval/hybridRetrieval');
 
 // Initialize server
@@ -52,7 +50,6 @@ async function handleChatRequest(req, res) {
   try {
     const message = req.body.message;
     const sessionId = req.body.sessionId;
-    const petId = req.body.petId;
 
     // Validate individually that required fields are present
     if (!message) {
@@ -63,23 +60,10 @@ async function handleChatRequest(req, res) {
       res.status(400).json({ error: 'sessionId is required' });
       return;
     }
-    if (!petId) {
-      res.status(400).json({ error: 'petId is required' });
-      return;
-    }
 
     // 1. Load conversation history
     const history = memoryService.getHistory(sessionId);
     console.log('Conversation history loaded for session ' + sessionId);
-
-    // 2. Retrieve pet context from Supabase using petId
-    const retrievedContext = await supabaseService.retrievePetContext(message, petId);
-
-    // 3. If context is empty, return early with message
-    if (retrievedContext === '') {
-      res.json({ response: 'No pet profile found for the provided petId. Please check your pet ID.' });
-      return;
-    }
 
     // 4. Retrieve general veterinary knowledge
     const vetKbResults = await hybridRetrieval.retrieve(message, 3);
@@ -93,8 +77,8 @@ async function handleChatRequest(req, res) {
       vetKbContextString = formattedKb.join('\n---\n');
     }
 
-    // 5. Build prompt passing retrieved context, vet KB context, user message, and history
-    const finalPrompt = buildPrompt(retrievedContext, vetKbContextString, message, history);
+    // 5. Build prompt passing vet KB context, user message, and history
+    const finalPrompt = buildPrompt(vetKbContextString, message, history);
 
     // 5. Call Groq with built prompt
     const responseText = await llmService.generateResponse(finalPrompt);
@@ -116,38 +100,7 @@ async function handleChatRequest(req, res) {
   }
 }
 
-/**
- * POST /api/ingest route handler.
- */
-async function handleIngestRequest(req, res) {
-  try {
-    const petData = req.body;
-    
-    if (!petData) {
-      res.status(400).json({ error: 'Pet profile data is required in the request body.' });
-      return;
-    }
-    if (!petData.name) {
-      res.status(400).json({ error: 'Required field: "name" is missing.' });
-      return;
-    }
-    if (!petData.petId) {
-      res.status(400).json({ error: 'Required field: "petId" is missing.' });
-      return;
-    }
 
-    // Call ingestion service
-    await ingestionService.ingestPetProfile(petData);
-    
-    res.json({ success: true });
-
-  } catch (error) {
-    console.error('Error in /api/ingest endpoint:', error);
-    res.status(500).json({
-      error: 'Internal Server Error'
-    });
-  }
-}
 
 /**
  * Global Express error handling middleware.
@@ -161,7 +114,6 @@ function globalErrorHandler(err, req, res, next) {
 
 // Define routes
 app.post('/api/chat', handleChatRequest);
-app.post('/api/ingest', handleIngestRequest);
 
 // Mount global error handler
 app.use(globalErrorHandler);

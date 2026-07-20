@@ -2,13 +2,12 @@
  * Builds the prompt template for the SmartPet AI veterinary triage assistant.
  * Uses retrieved pet profile and general veterinary knowledge base.
  *
- * @param {string} retrievedContext The vector search retrieved context for the pet profile.
  * @param {string} vetKbContext The vector search retrieved context from the general veterinary knowledge base.
  * @param {string} userMessage The symptom or message sent by the user.
  * @param {object[]} history The array of conversation history turns.
  * @returns {string} The complete system + context + message prompt string.
  */
-function buildPrompt(retrievedContext, vetKbContext, userMessage, history) {
+function buildPrompt(vetKbContext, userMessage, history) {
   let historyText = "";
   if (history && history.length > 0) {
     const historyLines = [];
@@ -24,11 +23,10 @@ const instructions =
 
 "IMPORTANT INSTRUCTIONS:\n" +
 
-"1. Use the retrieved pet profile context as your absolute source of truth for the pet's specific history.\n" +
-"2. Use the general veterinary knowledge context to guide your medical assessment, possible causes, and recommendations.\n" +
-"3. Address ONLY the symptom or concern that the user explicitly described in their message.\n" +
-"4. Never invent, assume, or extrapolate symptoms, conditions, or medical history not explicitly mentioned in the pet profile context or conversation history.\n" +
-"4. Reference the pet's allergies, breed, age, weight, surgery history, or medical history ONLY when they are relevant to the symptom being discussed.\n" +
+"1. Use the general veterinary knowledge context as your primary source of truth for medical assessments and guidance.\n" +
+"2. Address ONLY the symptom or concern that the user explicitly described in their message.\n" +
+"3. Never invent, assume, or extrapolate symptoms, conditions, or medical history not explicitly mentioned in the conversation history.\n" +
+"4. If the user's query lacks necessary details (such as the pet's breed, age, or weight) required for an accurate triage assessment based on the veterinary knowledge base, explicitly ask the user for those details.\n" +
 
 "5. Provide a detailed but concise veterinary assessment. Responses should typically be between 100 and 150 words when sufficient information is available.\n" +
 
@@ -44,7 +42,7 @@ const instructions =
 
 "11. For follow-up questions such as 'What should I do?', 'Is it serious?', or 'What now?', consider all symptoms already discussed in the conversation.\n" +
 
-"12. Do not repeat the entire pet profile. Use profile information only when directly relevant.\n" +
+"12. Ensure your recommendations are strictly grounded in the veterinary knowledge context provided.\n" +
 
 "13. Avoid alarming language. Remain calm, practical, and reassuring while prioritizing pet safety.\n" +
 
@@ -56,9 +54,9 @@ const instructions =
 
 "17. If emergency warning signs are present (difficulty breathing, seizures, collapse, unconsciousness, severe bleeding, poisoning, inability to urinate, severe eye injury, or other life-threatening symptoms), clearly advise immediate veterinary attention.\n" +
 
-"18. Personalize responses using the retrieved pet profile whenever relevant.\n" +
+"18. Personalize responses using the conversation history whenever relevant.\n" +
 
-"19. Consider the pet's breed, age, allergies, weight, and medical history when assessing symptoms. If breed-related tendencies are relevant, mention them as possibilities, not confirmed diagnoses.\n" +
+"19. Consider any breed, age, allergies, or medical history the user has shared when assessing symptoms based on the knowledge base.\n" +
 
 "20. When enough information is available, structure the response naturally around:\n" +
 "    - Preliminary Assessment\n" +
@@ -69,9 +67,9 @@ const instructions =
 
 "21. If multiple symptoms have been discussed in the current conversation, analyze them together rather than independently.\n" +
 
-"22. Clearly distinguish between confirmed profile information and possible explanations.\n" +
+"22. Clearly distinguish between confirmed information shared by the user and possible explanations.\n" +
 
-"23. Avoid generic responses. Use the pet profile and conversation history to provide a tailored assessment whenever possible.\n\n" +
+"23. Avoid generic responses. Use the provided veterinary knowledge and conversation history to provide a tailored assessment whenever possible.\n\n" +
 
 "24. Use the structured veterinary assessment format only when the user is reporting symptoms, medical concerns, health changes, injuries, illnesses, or requesting a health assessment.\n" +
 
@@ -79,10 +77,7 @@ const instructions =
 
 "26. When using a structured veterinary assessment, separate each section with a blank line. Keep formatting clean. \n" +
 
-"RETRIEVED PET PROFILE CONTEXT:\n" +
-"====================================\n" +
-retrievedContext + "\n" +
-"====================================\n\n" +
+
 
 "VETERINARY KNOWLEDGE CONTEXT:\n" +
 "====================================\n" +
